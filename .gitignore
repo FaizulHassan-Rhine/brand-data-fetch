@@ -102,6 +102,6 @@ Thumbs.db
 logs
 *.log
 
-# Temporary files
-tmp/
-temp/
+# Build outputs
+dist/
+build/

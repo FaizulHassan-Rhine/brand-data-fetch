@@ -18,6 +18,19 @@ const MAX_BATCHES_PER_COUNTRY_CRITERION = 450;
 /** Safety valve only (most runs finish when each query is exhausted first) */
 const MAX_TOTAL_SPARQL_REQUESTS = 120000;
 
+// Check if output file exists and has data
+if (fs.existsSync(OUTPUT_FILE)) {
+  try {
+    const existingData = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf8'));
+    if (Array.isArray(existingData) && existingData.length > 0) {
+      console.log(`Output file ${OUTPUT_FILE} already exists with ${existingData.length} records. Skipping fetch.`);
+      process.exit(0);
+    }
+  } catch (e) {
+    // Invalid JSON, proceed to fetch
+  }
+}
+
 /** Allowed countries (output labels), keyed by Wikidata Q-ID */
 const COUNTRY_BY_QID = {
   Q30: "USA",
