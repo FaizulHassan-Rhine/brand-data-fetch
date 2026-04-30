@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clothing brands by country</title>
+  <style>
+    :root {
+      --bg: #0f1218;
+      --surface: #171b24;
+      --surface2: #1e2430;
+      --border: #2a3242;
+      --text: #e8ecf4;
+      --muted: #9aa4b5;
+      --accent: #6ee7b7;
+      --accent-dim: rgba(110, 231, 183, 0.15);
+      --danger: #f87171;
+      --radius: 14px;
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2332 0%, transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, #142018 0%, transparent 50%), var(--bg);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+
+    header {
+      text-align: center;
+      padding: 2rem 0 1rem;
+    }
+
+    header h1 {
+      margin: 0 0 0.5rem;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .search-panel {
+      margin: 2rem auto 2.5rem;
+      max-width: 720px;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: stretch;
+    }
+
+    .search-row input[type="search"] {
+      flex: 1 1 280px;
+      min-height: 64px;
+      padding: 0 1.25rem;
+      font-size: 1.15rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      outline: none;
+      box-shadow: var(--shadow);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .search-row input[type="search"]::placeholder {
+      color: #6b7588;
+    }
+
+    .search-row input[type="search"]:focus {
+      border-color: rgba(110, 231, 183, 0.55);
+      box-shadow: 0 0 0 3px var(--accent-dim), var(--shadow);
+    }
+
+    .search-row button {
+      min-height: 64px;
+      padding: 0 1.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(145deg, #34d399, #059669);
+      color: #05140f;
+      box-shadow: var(--shadow);
+      transition: transform 0.08s ease, filter 0.15s;
+    }
+
+    .search-row button:hover {
+      filter: brightness(1.06);
+    }
+
+    .search-row button:active {
+      transform: translateY(1px);
+    }
+
+    .hint {
+      margin-top: 0.65rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .catalog-total {
+      text-align: center;
+      margin: 0 auto 1rem;
+      max-width: 720px;
+      padding: 0.65rem 1rem;
+      font-size: 1rem;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .catalog-total strong {
+      color: var(--accent);
+      font-size: 1.25rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .catalog-total.is-loading strong {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 1rem;
+    }
+
+    .status {
+      text-align: center;
+      min-height: 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.1rem;
+    }
+
+    .card {
+      background: linear-gradient(165deg, var(--surface2), var(--surface));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+      animation: fadeUp 0.35s ease both;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .logo-wrap {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      background: #0c0f14;
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .logo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 6px;
+    }
+
+    .logo-fallback {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 1.08rem;
+      font-weight: 650;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+    }
+
+    .badge {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(110, 231, 183, 0.35);
+    }
+
+    .card-meta {
+      font-size: 0.88rem;
+      color: var(--muted);
+      word-break: break-word;
+    }
+
+    .card-meta a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+
+    .card-meta a:hover {
+      text-decoration: underline;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .tag {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    #sentinel {
+      height: 1px;
+      margin-top: 1rem;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 520px) {
+      .search-row button {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Clothing brands</h1>
+      <p>Search by country — cards appear after you search. Catalog loads in the background for totals.</p>
+    </header>
+
+    <p class="catalog-total is-loading" id="catalog-total-panel" aria-live="polite">
+      <strong id="catalog-total-count">…</strong>
+      <span id="catalog-total-suffix"> brands in catalog</span>
+    </p>
+
+    <section class="search-panel" aria-label="Country search">
+      <form class="search-row" id="search-form" autocomplete="off">
+        <input
+          type="search"
+          id="country-input"
+          name="country"
+          placeholder="Type a country (e.g. USA, France, UK, UAE/Dubai…)"
+          list="countries"
+          aria-label="Country name"
+        />
+        <datalist id="countries"></datalist>
+        <button type="submit">Search</button>
+      </form>
+      <p class="hint">Matches brands whose country label contains your text (case-insensitive).</p>
+    </section>
+
+    <div class="status" id="status" aria-live="polite"></div>
+
+    <section id="results-section" class="hidden">
+      <div class="grid" id="grid"></div>
+      <div id="sentinel" aria-hidden="true"></div>
+    </section>
+
+    <div id="empty-state" class="empty hidden"></div>
+  </div>
+
+  <script>
+    (function () {
+      var DATA_URL = "clothing_brands_4000.json";
+      var PAGE_SIZE = 20;
+
+      var KNOWN_COUNTRIES = [
+        "USA",
+        "Canada",
+        "Germany",
+        "Netherlands",
+        "UK",
+        "Denmark",
+        "Portugal",
+        "Spain",
+        "Hungary",
+        "France",
+        "Italy",
+        "UAE/Dubai",
+        "Thailand",
+        "Hong Kong",
+        "Vietnam",
+        "Singapore",
+      ];
+
+      var allBrands = null;
+      var filtered = [];
+      var loadedCount = 0;
+      var loadingChunk = false;
+      var loadingFile = false;
+
+      var grid = document.getElementById("grid");
+      var sentinel = document.getElementById("sentinel");
+      var catalogTotalPanel = document.getElementById("catalog-total-panel");
+      var catalogTotalCountEl = document.getElementById("catalog-total-count");
+      var statusEl = document.getElementById("status");
+      var emptyState = document.getElementById("empty-state");
+      var resultsSection = document.getElementById("results-section");
+      var form = document.getElementById("search-form");
+      var countryInput = document.getElementById("country-input");
+      var datalist = document.getElementById("countries");
+
+      KNOWN_COUNTRIES.forEach(function (c) {
+        var opt = document.createElement("option");
+        opt.value = c;
+        datalist.appendChild(opt);
+      });
+
+      function setStatus(msg, isError) {
+        statusEl.textContent = msg || "";
+        statusEl.classList.toggle("error", !!isError);
+      }
+
+      function catalogTotalNum() {
+        return allBrands && allBrands.length ? allBrands.length.toLocaleString() : "—";
+      }
+
+      function updateCatalogTotalDisplay() {
+        if (!catalogTotalCountEl || !catalogTotalPanel) return;
+        if (allBrands && allBrands.length) {
+          catalogTotalCountEl.textContent = allBrands.length.toLocaleString();
+          catalogTotalPanel.classList.remove("is-loading");
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () {
+          loadJsonOnce()
+            .then(updateCatalogTotalDisplay)
+            .catch(function () {
+              if (catalogTotalCountEl) catalogTotalCountEl.textContent = "?";
+              if (catalogTotalPanel) {
+                catalogTotalPanel.classList.add("is-loading");
+                catalogTotalPanel.title =
+                  "Serve this folder over HTTP so clothing_brands_4000.json can load.";
+              }
+            });
+        });
+      } else {
+        loadJsonOnce()
+          .then(updateCatalogTotalDisplay)
+          .catch(function () {
+            if (catalogTotalCountEl) catalogTotalCountEl.textContent = "?";
+          });
+      }
+
+      function loadJsonOnce() {
+        if (allBrands !== null) return Promise.resolve(allBrands);
+        if (loadingFile) return loadingFile;
+        loadingFile = fetch(DATA_URL)
+          .then(function (res) {
+            if (!res.ok) throw new Error("Could not load " + DATA_URL + " (" + res.status + ")");
+            return res.json();
+          })
+          .then(function (data) {
+            allBrands = Array.isArray(data) ? data : [];
+            loadingFile = false;
+            return allBrands;
+          })
+          .catch(function (err) {
+            loadingFile = false;
+            throw err;
+          });
+        return loadingFile;
+      }
+
+      function applyFilter(query) {
+        var q = (query || "").trim().toLowerCase();
+        if (!q) {
+          filtered = [];
+          return;
+        }
+        filtered = allBrands.filter(function (b) {
+          return (b.country || "").toLowerCase().indexOf(q) !== -1;
+        });
+      }
+
+      function resetResultsDom() {
+        grid.innerHTML = "";
+        loadedCount = 0;
+        emptyState.classList.add("hidden");
+        emptyState.textContent = "";
+      }
+
+      function appendCards(slice) {
+        slice.forEach(function (b) {
+          var card = document.createElement("article");
+          card.className = "card";
+
+          var top = document.createElement("div");
+          top.className = "card-top";
+
+          var logoWrap = document.createElement("div");
+          logoWrap.className = "logo-wrap";
+          var initials = (b.name || "?").trim().slice(0, 2).toUpperCase();
+          var img = document.createElement("img");
+          img.alt = "";
+          img.loading = "lazy";
+          img.decoding = "async";
+          img.src = b.logo || "";
+          img.onerror = function () {
+            logoWrap.innerHTML = '<span class="logo-fallback"></span>';
+            logoWrap.querySelector(".logo-fallback").textContent = initials;
+          };
+          logoWrap.appendChild(img);
+
+          var titleBlock = document.createElement("div");
+          var h2 = document.createElement("h2");
+          h2.className = "card-title";
+          h2.textContent = b.name || "Unknown";
+          var badge = document.createElement("span");
+          badge.className = "badge";
+          badge.textContent = b.country || "—";
+          titleBlock.appendChild(h2);
+
+          top.appendChild(logoWrap);
+          top.appendChild(titleBlock);
+          card.appendChild(top);
+          card.appendChild(badge);
+
+          var meta = document.createElement("div");
+          meta.className = "card-meta";
+          if (b.website) {
+            var a = document.createElement("a");
+            a.href = b.website;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.textContent = b.website.replace(/^https?:\/\//i, "");
+            meta.appendChild(a);
+          } else {
+            meta.textContent = "No website";
+          }
+          card.appendChild(meta);
+
+          var tags = document.createElement("div");
+          tags.className = "tags";
+          (b.categories || []).forEach(function (c) {
+            var t = document.createElement("span");
+            t.className = "tag";
+            t.textContent = c;
+            tags.appendChild(t);
+          });
+          if (tags.childNodes.length) card.appendChild(tags);
+
+          grid.appendChild(card);
+        });
+      }
+
+      function loadNextChunk() {
+        if (loadingChunk) return;
+        if (loadedCount >= filtered.length) return;
+
+        loadingChunk = true;
+        var next = filtered.slice(loadedCount, loadedCount + PAGE_SIZE);
+        loadedCount += next.length;
+        appendCards(next);
+        loadingChunk = false;
+
+        var catalogHint = " · " + catalogTotalNum() + " in full catalog";
+        if (loadedCount >= filtered.length) {
+          setStatus(
+            "Showing all " +
+              filtered.length.toLocaleString() +
+              " brand(s) for this search" +
+              catalogHint +
+              ".",
+            false
+          );
+        } else {
+          setStatus(
+            "Showing " +
+              loadedCount.toLocaleString() +
+              " of " +
+              filtered.length.toLocaleString() +
+              " — scroll for more" +
+              catalogHint +
+              ".",
+            false
+          );
+        }
+      }
+
+      var observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            if (filtered.length === 0) return;
+            loadNextChunk();
+          });
+        },
+        { root: null, rootMargin: "240px", threshold: 0 }
+      );
+
+      observer.observe(sentinel);
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var q = countryInput.value;
+        setStatus("Loading dataset…", false);
+        resultsSection.classList.remove("hidden");
+
+        loadJsonOnce()
+          .then(function () {
+            updateCatalogTotalDisplay();
+            applyFilter(q);
+            resetResultsDom();
+
+            if (filtered.length === 0) {
+              resultsSection.classList.add("hidden");
+              emptyState.classList.remove("hidden");
+              emptyState.textContent =
+                q.trim() === ""
+                  ? "Enter a country to search."
+                  : "No brands found for “" + q.trim() + "”. Try another country.";
+              setStatus(
+                allBrands && allBrands.length
+                  ? "No matches. Catalog has " +
+                      allBrands.length.toLocaleString() +
+                      " brands total."
+                  : "",
+                false
+              );
+              return;
+            }
+
+            resultsSection.classList.remove("hidden");
+            emptyState.classList.add("hidden");
+            loadedCount = 0;
+            loadNextChunk();
+          })
+          .catch(function (err) {
+            console.error(err);
+            setStatus(
+              err.message ||
+                "Failed to load JSON. Serve this folder over HTTP (e.g. npx serve) so clothing_brands_4000.json can be fetched.",
+              true
+            );
+            resultsSection.classList.add("hidden");
+            emptyState.classList.remove("hidden");
+            emptyState.textContent = "";
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

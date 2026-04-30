@@ -1,0 +1,234 @@
+# Cursor Instruction: Build Free Clothing Brand Dataset Generator
+
+## Goal
+Create a Node.js script that generates a JSON dataset of real clothing/fashion brands using only free sources.
+
+## Data Sources
+Use:
+
+1. Wikidata SPARQL API
+   - Purpose: Collect real brand/company data.
+   - Cost: Free.
+   - API key: Not required.
+   - Endpoint:
+     https://query.wikidata.org/sparql
+
+2. Clearbit Logo API
+   - Purpose: Generate logo URLs from brand website domains.
+   - Cost: Free fallback.
+   - API key: Not required.
+   - Logo format:
+     https://logo.clearbit.com/domain.com
+
+## Required Output
+Generate a JSON file named:
+
+clothing_brands_4000.json
+
+The file should contain an array of brand objects.
+
+Each object must follow this schema:
+
+```json
+{
+  "name": "Nike",
+  "logo": "https://logo.clearbit.com/nike.com",
+  "country": "USA",
+  "website": "https://www.nike.com",
+  "categories": ["shoes", "clothing", "cap"]
+}
+```
+
+## Required Fields
+
+### name
+Brand name from Wikidata.
+
+### logo
+Use Clearbit logo URL based on the brand website domain.
+
+Example:
+Website:
+https://www.nike.com
+
+Logo:
+https://logo.clearbit.com/nike.com
+
+### country
+Only include brands from these countries:
+
+- USA
+- Canada
+- Germany
+- Netherlands
+- UK
+- Denmark
+- Portugal
+- Spain
+- Hungary
+- France
+- Italy
+- UAE/Dubai
+- Thailand
+- Hong Kong
+- Vietnam
+- Singapore
+
+Map Wikidata country names like this:
+
+```js
+const COUNTRY_MAP = {
+  "United States of America": "USA",
+  "Canada": "Canada",
+  "Germany": "Germany",
+  "Netherlands": "Netherlands",
+  "United Kingdom": "UK",
+  "Denmark": "Denmark",
+  "Portugal": "Portugal",
+  "Spain": "Spain",
+  "Hungary": "Hungary",
+  "France": "France",
+  "Italy": "Italy",
+  "United Arab Emirates": "UAE/Dubai",
+  "Thailand": "Thailand",
+  "Hong Kong": "Hong Kong",
+  "Vietnam": "Vietnam",
+  "Singapore": "Singapore"
+};
+```
+
+### website
+Use official website from Wikidata property P856.
+
+Skip records without a website.
+
+### categories
+Every brand must have at least one clothing-related category.
+
+Allowed category values:
+
+```js
+["shoes", "cap", "dress", "sunglasses", "clothing"]
+```
+
+If specific category cannot be detected, use:
+
+```js
+["clothing"]
+```
+
+## Filtering Rules
+
+Only keep records that:
+
+1. Have a brand name.
+2. Have an official website.
+3. Have a country in the allowed country list.
+4. Are related to fashion, clothing, footwear, apparel, accessories, luxury fashion, sportswear, eyewear, or retail fashion.
+5. Are not duplicates.
+
+## Duplicate Removal
+
+Remove duplicates by:
+
+```js
+name.toLowerCase() + "|" + website.toLowerCase()
+```
+
+## SPARQL Requirements
+
+Use Wikidata SPARQL query to collect entities related to:
+
+- fashion brands
+- clothing brands
+- footwear brands
+- apparel companies
+- luxury fashion brands
+- sportswear brands
+- eyewear brands
+- fashion retailers
+
+The script should request enough results to try to reach 4000 records.
+
+Use a safe User-Agent header.
+
+Example header:
+
+```js
+"User-Agent": "clothing-brand-dataset-generator/1.0"
+```
+
+## Node.js Requirements
+
+Use Node.js.
+
+Recommended packages:
+
+```bash
+npm install axios
+```
+
+Use built-in `fs` module to save the JSON file.
+
+## Error Handling
+
+The script should:
+
+1. Handle API errors.
+2. Skip incomplete records.
+3. Continue processing if one record is invalid.
+4. Log the total number of saved records.
+5. Save whatever valid records are found, even if fewer than 4000.
+
+## Output Format
+
+Final JSON should be an array:
+
+```json
+[
+  {
+    "name": "Nike",
+    "logo": "https://logo.clearbit.com/nike.com",
+    "country": "USA",
+    "website": "https://www.nike.com",
+    "categories": ["shoes", "clothing", "cap"]
+  }
+]
+```
+
+## File Names
+
+Create these files:
+
+1. `build_clothing_brands.js`
+   - Main Node.js script.
+
+2. `clothing_brands_4000.json`
+   - Generated dataset output.
+
+3. `README.md`
+   - Short usage guide.
+
+## Usage Instructions for README
+
+Include:
+
+```bash
+npm install axios
+node build_clothing_brands.js
+```
+
+After running, the output should be:
+
+```bash
+clothing_brands_4000.json
+```
+
+## Important Notes
+
+- Do not create fake brands.
+- Do not generate dummy data like "Brand 1", "Brand 2".
+- Only use real data from Wikidata.
+- Logo URLs can be Clearbit-generated from official domains.
+- Some Clearbit logos may not exist, but the URL format should still be included.
+- If fewer than 4000 valid records are found, save the valid records and show a warning.
