@@ -36,6 +36,7 @@ function App() {
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
   const [showResults, setShowResults] = useState(false);
   const [emptyMessage, setEmptyMessage] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   const sentinelRef = useRef(null);
   const gridRef = useRef(null);
@@ -96,62 +97,77 @@ function App() {
   const applyFilter = (q) => {
     if (!q.trim()) {
       setFiltered([]);
-      return;
+      return [];
     }
     const filteredBrands = allBrands.filter(b =>
       (b.country || '').toLowerCase().includes(q.toLowerCase())
     );
     setFiltered(filteredBrands);
+    return filteredBrands;
   };
 
-  const loadNextChunk = () => {
-    if (loadingChunk || loadedCount >= filtered.length) return;
+  const loadNextChunk = (start = loadedCount) => {
+    if (loadingChunk || start >= filtered.length) return;
     setLoadingChunk(true);
-    const next = filtered.slice(loadedCount, loadedCount + PAGE_SIZE);
+    const next = filtered.slice(start, start + PAGE_SIZE);
     setLoadedCount(prev => prev + next.length);
-    // Append cards will be handled in render
     setLoadingChunk(false);
 
     const catalogHint = ` · ${allBrands ? allBrands.length.toLocaleString() : '—'} in full catalog`;
-    if (loadedCount + next.length >= filtered.length) {
+    const totalShown = start + next.length;
+    if (totalShown >= filtered.length) {
       setStatus(`Showing all ${filtered.length.toLocaleString()} brand(s) for this search${catalogHint}.`);
       setIsError(false);
     } else {
-      setStatus(`Showing ${(loadedCount + next.length).toLocaleString()} of ${filtered.length.toLocaleString()} — scroll for more${catalogHint}.`);
+      setStatus(`Showing ${totalShown.toLocaleString()} of ${filtered.length.toLocaleString()} — scroll for more${catalogHint}.`);
       setIsError(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const q = query;
-    setStatus('Loading dataset…');
+  const performSearch = async (q) => {
+    if (loadingFile || isSearching) return;
+
+    const normalizedQuery = q.trim();
+    setIsSearching(true);
+    setStatus(normalizedQuery ? `Searching for "${normalizedQuery}"…` : 'Searching catalog…');
     setIsError(false);
     setShowResults(true);
 
     try {
       await loadJsonOnce();
-      applyFilter(q);
+      const filteredBrands = applyFilter(q);
       setLoadedCount(0);
       setShowResults(true);
       setEmptyMessage('');
 
-      if (filtered.length === 0) {
+      if (filteredBrands.length === 0) {
         setShowResults(false);
-        setEmptyMessage(q.trim() === '' ? 'Enter a country to search.' : `No brands found for "${q.trim()}". Try another country.`);
+        setEmptyMessage(normalizedQuery === '' ? 'Enter a country to search.' : `No brands found for "${normalizedQuery}". Try another country.`);
         setStatus(allBrands && allBrands.length ? `No matches. Catalog has ${allBrands.length.toLocaleString()} brands total.` : '');
         setIsError(false);
         return;
       }
 
-      loadNextChunk();
+      loadNextChunk(0);
     } catch (err) {
       console.error(err);
       setStatus(err.message || "Failed to load JSON. Serve this folder over HTTP so clothing_brands_4000.json can be fetched.");
       setIsError(true);
       setShowResults(false);
       setEmptyMessage('');
+    } finally {
+      setIsSearching(false);
     }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    performSearch(query);
+  };
+
+  const handleSuggestionClick = (country) => {
+    setQuery(country);
+    performSearch(country);
   };
 
   const renderCard = (b) => {
@@ -228,9 +244,26 @@ function App() {
           <datalist id="countries">
             {KNOWN_COUNTRIES.map(c => <option key={c} value={c} />)}
           </datalist>
-          <button type="submit">Search</button>
+          <button type="submit" disabled={loadingFile || isSearching}>
+            {isSearching ? <><span className="spinner" aria-hidden="true" /> Searching…</> : 'Search'}
+          </button>
         </form>
-        <p className="hint">Matches brands whose country label contains your text (case-insensitive).</p>
+
+        <div className="search-suggestions" aria-label="Quick country searches">
+          {KNOWN_COUNTRIES.slice(0, 8).map(c => (
+            <button
+              key={c}
+              type="button"
+              className="suggestion-pill"
+              onClick={() => handleSuggestionClick(c)}
+              disabled={isSearching}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <p className="hint">Matches brands whose country label contains your text (case-insensitive). Click a suggested country to search instantly.</p>
       </section>
 
       <div className={`status ${isError ? 'error' : ''}`} aria-live="polite">{status}</div>
